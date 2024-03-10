@@ -41,7 +41,7 @@ export default async function RootLayout({ children }: { children?: JSX.Element 
 }
 ```
 
-The scripts referenced in `src` attributes will be bundled to the `outDir` of the Bun.bundle config. The `npm:` prefix is used to reference packages from the `node_modules` directory. The `https://` prefix is used to reference external scripts. Any other scripts referenced without the prefixes will not be bundled.
+The scripts referenced in `src` attributes will be bundled to the `outDir` of the Bun.build config. The `npm:` prefix is used to reference packages from the `node_modules` directory. The `https://` prefix is used to reference external scripts. Any other scripts referenced without the prefixes will not be bundled.
 
 Resulting output:
 ```
