@@ -46,11 +46,13 @@ The scripts referenced in `src` attributes will be bundled to the `outDir` of th
 Resulting output:
 ```
 /outDir
-    /js
-        /htmx.min.js
-        /_hyperscript.min.js
-    /some-root-layout.js
+    /htmx.min-[hash].js
+    /_hyperscript.min-[hash].js
+    /index.js
 ```
+
+The script file names depends on the `naming` or `naming.asset` build option. If not set, it defaults to `[dir]/[name]-[hash].[ext]`.
+
 ## Contributing
 
 ```bash
