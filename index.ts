@@ -1,4 +1,5 @@
 import type { BunPlugin, OnLoadArgs, OnLoadResult, PluginBuilder } from "bun";
+import path from "node:path";
 
 type Options = { verbose?: true; inline?: true };
 
@@ -13,6 +14,45 @@ type ExtraArgs = Record<string, unknown> & {
 };
 
 const pluginName = "bun-plugin-jsx-script-bundle";
+
+const defaultAssetNaming = "[dir]/[name]-[hash].[ext]";
+
+const saveScriptToOutDir = async (
+	build: PluginBuilder,
+	filePath: string,
+	assetFileContent: string,
+	options?: Options,
+) => {
+	const assetNaming = build.config.naming
+		? typeof build.config.naming === "string"
+			? build.config.naming ?? defaultAssetNaming
+			: build.config.naming.asset ?? defaultAssetNaming
+		: defaultAssetNaming;
+
+	const assetFileNameArray = (filePath.split("/").pop() ?? "").split(".");
+
+	const ext = assetFileNameArray.pop() ?? "";
+
+	const assetFileName = assetFileNameArray.join(".");
+
+	const hasher = new Bun.CryptoHasher("sha256");
+	const hash = hasher.update(assetFileContent).digest("hex").slice(0, 16);
+
+	const savePathArray = assetNaming
+		.replace("[dir]", `${build.config.outdir}${build.config.publicPath ?? ""}`)
+		.replace("[name]", `${assetFileName}`)
+		.replace("[hash]", hash)
+		.replace("[ext]", ext)
+		.split("/");
+
+	const savePath = path.join(...savePathArray);
+
+	if (options?.verbose) console.log(`${pluginName}: Writing to ${savePath}`);
+
+	await Bun.write(savePath, assetFileContent);
+
+	return savePath.replace(path.join(build.config.outdir ?? ""), "");
+};
 
 const handleRemoteScripts = async (
 	build: PluginBuilder,
@@ -38,19 +78,13 @@ const handleRemoteScripts = async (
 	}
 
 	if (build.config?.outdir) {
-		const moduleFileName = new URL(res.url).pathname.split("/").pop() ?? "";
-
-		const savePath = `${build.config.outdir}${
-			build.config.publicPath ?? ""
-		}/js/${moduleFileName}`;
-
-		if (options?.verbose) console.log(`${pluginName}: Writing to ${savePath}`);
-
-		Bun.write(`${savePath}`, await res.text());
-		return `${match.replace(
-			url,
-			`${build.config?.publicPath ?? ""}/js/${moduleFileName}`,
-		)}`;
+		const assetPath = await saveScriptToOutDir(
+			build,
+			new URL(res.url).pathname,
+			await res.text(),
+			options,
+		);
+		return `${match.replace(url, assetPath)}`;
 	}
 
 	// If no outdir is provided or no inline option, leave it be
@@ -88,19 +122,14 @@ const handleModules = async (
 	}
 
 	if (build.config?.outdir) {
-		const moduleFileName = modulefilePath.split("/").pop() ?? "";
+		const assetPath = await saveScriptToOutDir(
+			build,
+			modulefilePath,
+			moduleFileContent,
+			options,
+		);
 
-		const savePath = `${build.config.outdir}${
-			build.config.publicPath ?? ""
-		}/js/${moduleFileName}`;
-
-		if (options?.verbose) console.log(`${pluginName}: Writing to ${savePath}`);
-
-		await Bun.write(savePath, moduleFileContent);
-		return `${match.replace(
-			moduleName,
-			`${build.config?.publicPath ?? ""}/js/${moduleFileName}`,
-		)}`;
+		return `${match.replace(moduleName, assetPath)}`;
 	}
 
 	// If no outdir is provided or no inline option, leave it be
