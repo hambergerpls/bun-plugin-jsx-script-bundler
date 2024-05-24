@@ -1,5 +1,11 @@
 # bun-plugin-jsx-script-bundler
 
+## 0.2.1
+
+### Patch Changes
+
+- e0ee383: fix: outDir and publicPath not joined properly
+
 ## 0.2.0
 
 ### Minor Changes
