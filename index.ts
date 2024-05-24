@@ -39,7 +39,10 @@ const saveScriptToOutDir = async (
 	const hash = hasher.update(assetFileContent).digest("hex").slice(0, 16);
 
 	const savePathArray = assetNaming
-		.replace("[dir]", `${build.config.outdir}${build.config.publicPath ?? ""}`)
+		.replace(
+			"[dir]",
+			`${path.join(build.config.outdir ?? "", build.config.publicPath ?? "")}`,
+		)
 		.replace("[name]", `${assetFileName}`)
 		.replace("[hash]", hash)
 		.replace("[ext]", ext)
